@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>OPEN WORLD ACTION — Release 0.1</title>
+<style>
+  *{box-sizing:border-box} html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101820;font-family:system-ui,Arial;color:#fff}
+  canvas{display:block;width:100%;height:100%;touch-action:none}
+  #hud{position:fixed;inset:0;pointer-events:none}
+  #brand{position:absolute;left:16px;top:12px;font-size:12px;letter-spacing:2px;color:#d8e4e9;text-shadow:0 2px 5px #000}
+  #mission{position:absolute;left:16px;top:42px;background:#101820bb;border:1px solid #ffffff30;border-radius:10px;padding:10px 13px;font-size:12px;max-width:230px}
+  #healthWrap{position:absolute;left:16px;bottom:18px;width:180px;background:#101820cc;padding:9px 11px;border-radius:10px;border:1px solid #ffffff35;font-size:11px}
+  #healthBar{height:8px;background:#4c2525;border-radius:8px;margin-top:6px;overflow:hidden}
+  #health{height:100%;width:100%;background:#62d18b;transition:width .2s}
+  #help{position:absolute;right:14px;top:14px;text-align:right;background:#101820aa;padding:9px 11px;border-radius:9px;font-size:11px;line-height:1.55;color:#e4edf0}
+  #message{position:absolute;left:50%;top:18%;transform:translateX(-50%);font-weight:700;text-shadow:0 2px 8px #000;font-size:14px;text-align:center}
+  #crosshair{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:22px;color:#fff;text-shadow:0 1px 5px #000}
+  #mobile{display:none;position:fixed;inset:0;pointer-events:none}
+  #stick{position:absolute;left:22px;bottom:36px;width:118px;height:118px;border-radius:50%;background:#ffffff20;border:1px solid #ffffff65;pointer-events:auto;touch-action:none}
+  #nub{position:absolute;left:36px;top:36px;width:46px;height:46px;border-radius:50%;background:#ffffff88;border:1px solid #fff}
+  .action{position:absolute;right:22px;border:1px solid #ffffff80;background:#17232dcc;color:white;border-radius:50%;width:62px;height:62px;font-weight:700;pointer-events:auto;touch-action:none}
+  #fire{bottom:48px;right:25px;background:#a6372ecc}
+  #jump{bottom:122px;right:92px;width:52px;height:52px}
+  #reset{position:absolute;right:15px;bottom:15px;pointer-events:auto;background:#14232ddd;color:white;border:1px solid #ffffff55;border-radius:8px;padding:8px 11px;font-size:11px}
+  @media(pointer:coarse){#mobile{display:block}#help{display:none}}
+</style>
+</head>
+<body>
+
+<style>
+#mainMenu{position:fixed;z-index:20;inset:0;display:flex;align-items:center;justify-content:center;
+background:linear-gradient(120deg,rgba(4,12,17,.96),rgba(10,28,35,.88)),
+url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1600') center/cover;
+padding:20px;font-family:system-ui,Arial;color:#f3f8f7}
+.menuCard{width:min(680px,100%);border:1px solid #ffffff35;background:#0b171de8;
+border-radius:20px;padding:clamp(20px,5vw,38px);box-shadow:0 20px 70px #0009}
+.menuEyebrow{font-size:11px;letter-spacing:3px;color:#a8d9bd;font-weight:800}
+.menuTitle{font-size:clamp(34px,8vw,62px);line-height:.98;margin:12px 0;letter-spacing:-2px}
+.menuSub{color:#c0d0d4;font-size:13px;line-height:1.6;max-width:520px}
+.menuGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin:20px 0}
+.menuChoice{border:1px solid #49616a;background:#14252d;color:#e8f2f2;border-radius:10px;padding:12px;text-align:left}
+.menuChoice.active{border-color:#a8d9bd;background:#1c3b32}
+.menuChoice b{display:block;font-size:12px}.menuChoice small{color:#aabcc1;font-size:10px}
+#startGame{width:100%;padding:15px;border:0;border-radius:10px;background:#b6e3c7;color:#102019;
+font-weight:900;letter-spacing:1.2px;font-size:13px;margin-top:5px}
+.menuFoot{font-size:10px;color:#8fa3aa;line-height:1.5;margin-top:13px}
+#menuToggle{position:fixed;z-index:10;top:12px;right:12px;background:#14232ddd;color:white;
+border:1px solid #ffffff55;border-radius:8px;padding:9px 12px;font-size:11px;display:none}
+@media(max-width:520px){.menuGrid{grid-template-columns:1fr 1fr}.menuChoice{padding:10px 8px}}
+</style>
+<div id="mainMenu">
+  <div class="menuCard">
+    <div class="menuEyebrow">A NEW WORLD. YOUR FIRST MISSION.</div>
+    <div class="menuTitle">OPEN WORLD<br>ACTION</div>
+    <div class="menuSub">Explore the training grounds, move through the field and eliminate hostile targets. This is the first playable build of a larger open-world action project.</div>
+    <div style="margin-top:18px;font-size:11px;color:#a8d9bd;font-weight:800;letter-spacing:1.5px">SELECT YOUR WORLD</div>
+    <div class="menuGrid" id="worldChoices">
+      <button class="menuChoice active" data-world="Bangladesh"><b>BANGLADESH</b><small>Hills · Rivers · Villages</small></button>
+      <button class="menuChoice" data-world="Metropolis"><b>METROPOLIS</b><small>City · Rooftops</small></button>
+      <button class="menuChoice" data-world="Lost Island"><b>LOST ISLAND</b><small>Jungle · Coast</small></button>
+      <button class="menuChoice" data-world="Desert Storm"><b>DESERT STORM</b><small>Dunes · Outposts</small></button>
+    </div>
+    <div style="font-size:11px;color:#a8d9bd;font-weight:800;letter-spacing:1.5px">SELECT MODE</div>
+    <div class="menuGrid" id="modeChoices">
+      <button class="menuChoice active" data-mode="Training Mission"><b>TRAINING MISSION</b><small>Eliminate all targets</small></button>
+      <button class="menuChoice" data-mode="Nightmare"><b>NIGHTMARE</b><small>Wave survival · Coming soon</small></button>
+      <button class="menuChoice" data-mode="Territory War"><b>TERRITORY WAR</b><small>Capture points · Coming soon</small></button>
+      <button class="menuChoice" data-mode="Battle Royale"><b>BATTLE ROYALE</b><small>Last player standing · Coming soon</small></button>
+    </div>
+    <button id="startGame">ENTER TRAINING ZONE</button>
+    <div class="menuFoot">RELEASE 0.1 · SINGLE PLAYER PROTOTYPE<br>Other worlds, online multiplayer and additional modes are planned for future updates.</div>
+  </div>
+</div>
+<button id="menuToggle">MAIN MENU</button>
+<div id="hud">
+  <div id="brand">OPEN WORLD ACTION <span style="color:#9bc6ad"> / RELEASE 0.1</span></div>
+  <div id="mission"><b>MISSION 01 — FIELD TEST</b><br>Move through the training zone and eliminate the hostile targets.<br><span id="score">Targets: 0 / 3</span></div>
+  <div id="help">W A S D — Move<br>Mouse — Look<br>Click — Fire<br>Space — Jump<br>R — Restart</div>
+  <div id="crosshair">+</div>
+  <div id="message">TRAINING ZONE — ENTER THE FIELD</div>
+  <div id="healthWrap">PLAYER HEALTH <span id="healthText" style="float:right">100%</span><div id="healthBar"><div id="health"></div></div></div>
+</div>
+<div id="mobile">
+  <div id="stick"><div id="nub"></div></div>
+  <button class="action" id="fire">FIRE</button>
+  <button class="action" id="jump">JUMP</button>
+  <button id="reset">RESTART</button>
+</div>
+
+<script>
+let selectedWorld = "Bangladesh";
+let selectedMode = "Training Mission";
+document.querySelectorAll("[data-world]").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    selectedWorld=btn.dataset.world;
+    document.querySelectorAll("#worldChoices .menuChoice").forEach(x=>x.classList.toggle("active",x===btn));
+  });
+});
+document.querySelectorAll("[data-mode]").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    selectedMode=btn.dataset.mode;
+    document.querySelectorAll("#modeChoices .menuChoice").forEach(x=>x.classList.toggle("active",x===btn));
+    document.getElementById("startGame").textContent =
+      selectedMode==="Training Mission" ? "ENTER TRAINING ZONE" : "START PREVIEW";
+  });
+});
+document.getElementById("startGame").addEventListener("click",()=>{
+  document.getElementById("mainMenu").style.display="none";
+  document.getElementById("menuToggle").style.display="block";
+  const msg=document.getElementById("message");
+  if(msg) msg.textContent = selectedMode==="Training Mission"
+    ? selectedWorld.toUpperCase()+" — TRAINING MISSION"
+    : selectedMode.toUpperCase()+" — MODE PREVIEW (TRAINING GAMEPLAY)";
+});
+document.getElementById("menuToggle").addEventListener("click",()=>{
+  document.getElementById("mainMenu").style.display="flex";
+});
+</script>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9db9c2);
+scene.fog = new THREE.Fog(0x9db9c2, 38, 125);
+const camera = new THREE.PerspectiveCamera(65, innerWidth/innerHeight, .1, 250);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.05;
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xdceeff,0x566044,2.0));
+const sun=new THREE.DirectionalLight(0xffedcf,2.3);
+sun.position.set(-25,45,20); sun.castShadow=true;
+sun.shadow.mapSize.set(1024,1024);
+sun.shadow.camera.left=-55; sun.shadow.camera.right=55; sun.shadow.camera.top=55; sun.shadow.camera.bottom=-55;
+scene.add(sun);
+
+const groundMat=new THREE.MeshStandardMaterial({color:0x52694c,roughness:1});
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(180,180,1,1),groundMat);
+ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
+
+// Terrain patches, paths, rocks and trees
+const path=new THREE.Mesh(new THREE.PlaneGeometry(9,110),new THREE.MeshStandardMaterial({color:0x887c62,roughness:1}));
+path.rotation.x=-Math.PI/2; path.position.set(0,.015,-28); scene.add(path);
+function makeTree(x,z,s=1){
+ const g=new THREE.Group();
+ const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.18*s,.27*s,2.2*s,7),new THREE.MeshStandardMaterial({color:0x59432f}));
+ trunk.position.y=1.1*s; trunk.castShadow=true; g.add(trunk);
+ const crown=new THREE.Mesh(new THREE.ConeGeometry(1.35*s,3.2*s,7),new THREE.MeshStandardMaterial({color:0x294a35,roughness:1}));
+ crown.position.y=3.1*s; crown.castShadow=true; g.add(crown);
+ g.position.set(x,0,z); scene.add(g);
+}
+for(let i=0;i<58;i++){
+ const a=(i/58)*Math.PI*2, r=25+(i%5)*5;
+ makeTree(Math.cos(a)*r+(Math.random()-.5)*5,Math.sin(a)*r+(Math.random()-.5)*5,.7+Math.random()*.7);
+}
+function building(x,z,w,h,d,color=0x777c78){
+ const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:.9}));
+ b.position.set(x,h/2,z); b.castShadow=true;b.receiveShadow=true;scene.add(b);
+ const roof=new THREE.Mesh(new THREE.BoxGeometry(w+0.25,.25,d+.25),new THREE.MeshStandardMaterial({color:0x414b4a}));
+ roof.position.set(x,h+.12,z);roof.castShadow=true;scene.add(roof);
+}
+building(-12,-18,9,5,8,0x88877c); building(13,-26,8,7,9,0x777e7b); building(-16,7,7,4,7,0x9b927e);
+building(17,9,10,5,8,0x77766e);
+for(let i=0;i<8;i++){
+ const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(1+Math.random()*1.5,0),new THREE.MeshStandardMaterial({color:0x626b61,roughness:1}));
+ rock.position.set((Math.random()-.5)*70,.7,(Math.random()-.5)*70);rock.scale.y=.65;rock.castShadow=true;scene.add(rock);
+}
+
+// Player: simple placeholder tactical character
+const player=new THREE.Group(); scene.add(player);
+const suit=new THREE.MeshStandardMaterial({color:0x293d3b,roughness:.85});
+const skin=new THREE.MeshStandardMaterial({color:0xb98b6a});
+const vest=new THREE.MeshStandardMaterial({color:0x4c5548,roughness:1});
+const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.43,.8,4,8),suit); torso.position.y=1.45; torso.castShadow=true;player.add(torso);
+const head=new THREE.Mesh(new THREE.SphereGeometry(.27,12,10),skin);head.position.y=2.25;head.castShadow=true;player.add(head);
+const pack=new THREE.Mesh(new THREE.BoxGeometry(.52,.7,.25),vest);pack.position.set(0,1.55,.42);player.add(pack);
+const legL=new THREE.Mesh(new THREE.CapsuleGeometry(.16,.65,3,6),vest), legR=legL.clone();
+legL.position.set(-.2,.52,0);legR.position.set(.2,.52,0);player.add(legL,legR);
+const gun=new THREE.Mesh(new THREE.BoxGeometry(.14,.14,1.05),new THREE.MeshStandardMaterial({color:0x171c1c,metalness:.55,roughness:.5}));
+gun.position.set(.36,1.62,-.65);player.add(gun);
+player.position.set(0,0,13);
+
+// Targets
+const targets=[];
+function makeTarget(x,z){
+ const group=new THREE.Group();
+ const body=new THREE.Mesh(new THREE.CapsuleGeometry(.38,.78,4,8),new THREE.MeshStandardMaterial({color:0x79463b}));
+ body.position.y=1.25;body.castShadow=true;group.add(body);
+ const head2=new THREE.Mesh(new THREE.SphereGeometry(.24,12,10),skin);head2.position.y=2.02;group.add(head2);
+ const marker=new THREE.Mesh(new THREE.SphereGeometry(.12,8,8),new THREE.MeshBasicMaterial({color:0xff6a4a}));
+ marker.position.y=2.55;group.add(marker);
+ group.position.set(x,0,z);scene.add(group);targets.push({group,alive:true,body});
+}
+makeTarget(-5,-8);makeTarget(7,-15);makeTarget(2,-31);
+
+const keys={};let yaw=0,pitch=-.12,health=100,score=0,velY=0,onGround=true;
+let pointerLocked=false, fireHeld=false, stick={x:0,y:0}, lastShot=0;
+const raycaster=new THREE.Raycaster();
+const clock=new THREE.Clock();
+function updateHUD(){
+ document.getElementById('health').style.width=health+'%';
+ document.getElementById('healthText').textContent=health+'%';
+ document.getElementById('score').textContent=`Targets: ${score} / 3`;
+}
+function shoot(){
+ const now=performance.now();if(now-lastShot<260)return;lastShot=now;
+ raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
+ const candidates=targets.filter(t=>t.alive).map(t=>t.body);
+ const hits=raycaster.intersectObjects(candidates,false);
+ if(hits.length){
+  const obj=hits[0].object, t=targets.find(t=>t.body===obj);
+  if(t){t.alive=false;scene.remove(t.group);score++;updateHUD();
+   document.getElementById('message').textContent=score===3?'ZONE CLEARED — PROTOTYPE COMPLETE':'TARGET ELIMINATED';}
+ } else {
+  document.getElementById('message').textContent='SHOT FIRED';
+ }
+}
+function jump(){if(onGround){velY=7;onGround=false;}}
+addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space')jump();if(e.code==='KeyR')location.reload();});
+addEventListener('keyup',e=>keys[e.code]=false);
+renderer.domElement.addEventListener('click',()=>{if(matchMedia('(pointer:fine)').matches)renderer.domElement.requestPointerLock();});
+document.addEventListener('pointerlockchange',()=>pointerLocked=document.pointerLockElement===renderer.domElement);
+document.addEventListener('mousemove',e=>{if(pointerLocked){yaw-=e.movementX*.0024;pitch=Math.max(-.55,Math.min(.35,pitch-e.movementY*.0018));}});
+renderer.domElement.addEventListener('mousedown',e=>{if(e.button===0&&pointerLocked)shoot();});
+
+// Mobile look: drag on right half of screen
+let lookTouch=null;
+renderer.domElement.addEventListener('touchstart',e=>{
+ for(const t of e.changedTouches){if(t.clientX>innerWidth*.43)lookTouch={id:t.identifier,x:t.clientX,y:t.clientY};}
+},{passive:true});
+renderer.domElement.addEventListener('touchmove',e=>{
+ for(const t of e.changedTouches){if(lookTouch&&t.identifier===lookTouch.id){yaw-=(t.clientX-lookTouch.x)*.006;pitch=Math.max(-.55,Math.min(.35,pitch-(t.clientY-lookTouch.y)*.004));lookTouch.x=t.clientX;lookTouch.y=t.clientY;}}
+},{passive:true});
+renderer.domElement.addEventListener('touchend',e=>{for(const t of e.changedTouches)if(lookTouch&&t.identifier===lookTouch.id)lookTouch=null;},{passive:true});
+
+// Virtual joystick
+const stickEl=document.getElementById('stick'),nub=document.getElementById('nub');let stickId=null;
+stickEl.addEventListener('pointerdown',e=>{stickId=e.pointerId;stickEl.setPointerCapture(stickId);moveStick(e);});
+stickEl.addEventListener('pointermove',e=>{if(e.pointerId===stickId)moveStick(e);});
+function moveStick(e){const r=stickEl.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy;const len=Math.hypot(dx,dy),max=39;if(len>max){dx=dx/len*max;dy=dy/len*max;}stick.x=dx/max;stick.y=dy/max;nub.style.transform=`translate(${dx}px,${dy}px)`;}
+function endStick(){stickId=null;stick.x=stick.y=0;nub.style.transform='translate(0,0)';}
+stickEl.addEventListener('pointerup',endStick);stickEl.addEventListener('pointercancel',endStick);
+document.getElementById('fire').addEventListener('pointerdown',e=>{e.preventDefault();shoot();});
+document.getElementById('jump').addEventListener('pointerdown',e=>{e.preventDefault();jump();});
+document.getElementById('reset').addEventListener('click',()=>location.reload());
+
+function animate(){
+ requestAnimationFrame(animate);
+ const dt=Math.min(clock.getDelta(),.04);
+ const forward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
+ const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+ let mx=(keys.KeyD?1:0)-(keys.KeyA?1:0)+stick.x;
+ let mz=(keys.KeyS?1:0)-(keys.KeyW?1:0)+stick.y;
+ const move=new THREE.Vector3().addScaledVector(right,mx).addScaledVector(forward,-mz);
+ if(move.length()>1)move.normalize();
+ const speed=(keys.ShiftLeft?8:5.2);
+ player.position.addScaledVector(move,speed*dt);
+ player.position.x=THREE.MathUtils.clamp(player.position.x,-43,43);
+ player.position.z=THREE.MathUtils.clamp(player.position.z,-48,48);
+ if(move.lengthSq()>.01)player.rotation.y=Math.atan2(-move.x,-move.z);
+ velY-=18*dt;player.position.y+=velY*dt;if(player.position.y<=0){player.position.y=0;velY=0;onGround=true;}
+ // camera follows behind player, with orbit look
+ const target=new THREE.Vector3(player.position.x,player.position.y+1.65,player.position.z);
+ const camDist=6.2;
+ const offset=new THREE.Vector3(Math.sin(yaw)*camDist,2.5+pitch*4,Math.cos(yaw)*camDist);
+ camera.position.lerp(target.clone().add(offset),1-Math.pow(.001,dt));
+ camera.lookAt(target.clone().add(new THREE.Vector3(0,pitch*5,-2)));
+ // subtle target idle movement
+ targets.forEach((t,i)=>{if(t.alive)t.group.rotation.y=Math.sin(performance.now()*.0005+i)*.12;});
+ renderer.render(scene,camera);
+}
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));});
+updateHUD();animate();
+</script>
+</body>
+</html>
